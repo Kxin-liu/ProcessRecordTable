@@ -1,4 +1,7 @@
-# 实验一配置：数据库与 Excel 列识别（别名优先 + 列序兜底）
+# 数据库与Excel列配置
+# DB_CONFIG: MySQL连接参数
+# COLUMN_ALIASES: Excel列名智能匹配规则
+# COLUMN_FALLBACK_INDEX: 列序兜底方案
 
 DB_CONFIG = {
     "host": "127.0.0.1",

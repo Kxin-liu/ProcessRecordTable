@@ -1,6 +1,6 @@
-# 输入: 当前目录下 HT_*.xlsx、config 中的数据库配置
-# 输出: 读取 -> 清洗（在 Reader 内通过 DataCleaner）-> 校验 -> 批量入库
-# 关键规则: 编排层只串联对象，业务在 core/io_utils 各单类中
+# 工艺数据导入主程序
+# 功能：Excel数据读取、清洗、验证、入库（流式处理，避免内存溢出）
+# 处理流程：查找HT文件 → 读取Excel → 流式处理 → 批量入库 → 释放内存
 
 from pathlib import Path
 
@@ -11,7 +11,7 @@ from data_io.db_handler import DatabaseClient
 from business_logic.StreamProcessor import StreamProcessor, LargeExcelProcessor
 
 
-def _find_excel_files(folder: str) -> list[str]:
+def _find_excel_files(folder: str) -> list[str]:  # 查找所有HT_开头的Excel文件
     base = Path(folder)
     out = []
     for p in base.iterdir():
@@ -22,7 +22,7 @@ def _find_excel_files(folder: str) -> list[str]:
     return sorted(out)
 
 
-def main():
+def main():  # 主函数：流式处理Excel数据
     # 配置参数
     BATCH_SIZE = 1000  # 每批入库的记录数
     MEMORY_THRESHOLD = 5000  # 内存阈值

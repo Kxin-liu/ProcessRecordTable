@@ -31,8 +31,8 @@ class ExcelReader:
         return index_map
 
     def read(self, file_path: str) -> list[ProcessRecord]:
-        df = pd.read_excel(file_path, engine="openpyxl")
-        return self.read_dataframe(df, file_path)
+        df = pd.read_excel(file_path, engine="openpyxl")  # pandas读取Excel
+        return self.read_dataframe(df, file_path)   # 调用核心处理
 
     def read_dataframe(self, df: pd.DataFrame, source_file: str = "") -> list[ProcessRecord]:
         """与 read 相同逻辑，便于测试用构造好的 DataFrame 做「不遗漏、不错误」断言。"""

@@ -9,7 +9,7 @@ import pandas as pd
 
 
 class DataCleaner:
-    """数值清洗与项目名称到标准参数的排他匹配。"""
+    """数据清洗器：数值清洗 + 项目名映射到参数名"""
 
     def clean_numeric(self, raw_val):
         """
