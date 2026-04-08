@@ -7,7 +7,7 @@ class ProcessRecord:
     """单条批号+物料下的 8 维工艺参数向量（实验一）。"""
 
     PARAM_ORDER = (
-        "core_od",
+        "core_od", #缆芯外径
         "jacket_od",
         "inner_die",
         "outer_die",
@@ -52,6 +52,7 @@ class ProcessRecord:
         missing = [k for k in self.PARAM_ORDER if getattr(self, k) is None]
         if missing:
             warnings.append(f"缺失参数: {','.join(missing)}")
+            # return False
 
         if self.jacket_od is not None and self.core_od is not None:
             if self.jacket_od <= self.core_od:
@@ -74,3 +75,4 @@ class ProcessRecord:
     def to_tuple(self) -> tuple:
         """8 维参数向量元组，顺序固定，供后续纯度/聚类/哈希等统计使用。"""
         return tuple(getattr(self, k) for k in self.PARAM_ORDER)
+    

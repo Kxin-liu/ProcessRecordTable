@@ -2,7 +2,7 @@
 
 import unittest
 
-from business_logic.logic import DataCleaner
+from business_logic.DataCleaner import DataCleaner
 
 
 class TestScrewSpeedRule(unittest.TestCase):

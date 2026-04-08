@@ -6,9 +6,9 @@ import unittest
 
 import pandas as pd
 
-from business_logic.logic import DataCleaner
-from business_logic.record import ProcessRecord
-from data_io.excel_handler import ExcelReader
+from business_logic.DataCleaner import DataCleaner
+from business_logic.ProcessRecord import ProcessRecord
+from data_io.ExcelReader import ExcelReader
 
 
 def _df_from_rows(rows: list[tuple]) -> pd.DataFrame:

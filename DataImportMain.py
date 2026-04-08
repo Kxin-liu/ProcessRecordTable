@@ -5,10 +5,11 @@
 from pathlib import Path
 
 from DatabaseConfig import DB_CONFIG
-from business_logic.logic import DataCleaner
-from data_io.excel_handler import ExcelReader
-from data_io.db_handler import DatabaseClient
-from business_logic.StreamProcessor import StreamProcessor, LargeExcelProcessor
+from business_logic.DataCleaner import DataCleaner
+from data_io.ExcelReader import ExcelReader
+from data_io.DatabaseClient import DatabaseClient
+from business_logic.StreamProcessor import StreamProcessor
+from business_logic.LargeExcelProcessor import LargeExcelProcessor
 
 
 def _find_excel_files(folder: str) -> list[str]:  # 查找所有HT_开头的Excel文件
@@ -92,13 +93,13 @@ def main_for_large_files():
         print(f"\n处理大文件: {file_path}")
 
         # 需要在ExcelReader中添加支持分块读取的方法
-        # 这里使用伪代码表示，实际实现需要修改ExcelReader
-        def chunked_read(file_path, start_row, chunk_size):
-            # 这里应该是ExcelReader的分块读取实现
-            # 为了演示，我们先用原方法
-            return ExcelReader(cleaner).read(file_path)  # 实际需要修改
+        # # 这里使用伪代码表示，实际实现需要修改ExcelReader
+        # def chunked_read(file_path, start_row, chunk_size):
+        #     # 这里应该是ExcelReader的分块读取实现
+        #     # 为了演示，我们先用原方法
+        #     return ExcelReader(cleaner).read(file_path)  # 实际需要修改
 
-        file_total, file_ok = processor.process_large_excel(file_path, chunked_read)
+        file_total, file_ok = processor.process_large_excel(file_path)
         file_bad = file_total - file_ok
 
         total_records += file_total

@@ -5,8 +5,8 @@
 import pandas as pd  # 导入pandas库，用于Excel文件处理
 
 from DatabaseConfig import COLUMN_ALIASES, COLUMN_FALLBACK_INDEX  # 导入列映射配置
-from business_logic.record import ProcessRecord  # 导入工艺记录类
-from business_logic.logic import DataCleaner  # 导入数据清洗器
+from business_logic.ProcessRecord import ProcessRecord  # 导入工艺记录类
+from business_logic.DataCleaner import DataCleaner  # 导入数据清洗器
 
 
 class ExcelReader:
