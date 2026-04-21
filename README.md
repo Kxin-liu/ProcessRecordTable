@@ -1,10 +1,10 @@
-# 这是一个工艺参数持久化的项目（shit
+# 这是一个工艺参数持久化的项目
 
 1. MySQL 执行 `schema.sql`
-2. 将 `HT_*.xlsx` （teacher给的实际数据表格）放入本目录
+2. 将 `HT_*.xlsx` （实际数据表格）放入本目录
 3. `python main.py`
 
-## 自动化测试（依旧shit）
+## 自动化测试
 
 ```bash
 python -m unittest discover -s tests -p "test_*.py" -v
