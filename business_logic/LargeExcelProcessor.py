@@ -1,4 +1,7 @@
+import gc
+
 from business_logic.DataCleaner import DataCleaner
+from business_logic.StreamProcessor import StreamProcessor
 from data_io.ExcelReader import ExcelReader
 from data_io.DatabaseClient import DatabaseClient
 

@@ -14,7 +14,7 @@ class DatabaseClient:
         self._db_cfg = db_cfg
         self._batch_size = batch_size
         self._connection = None
-        self._table_fields = None  # 缓存表字段信息
+        self._table_fields = {}  # 按表名缓存字段信息
 
     def _get_connection(self):
         """获取数据库连接，支持复用"""
@@ -36,8 +36,8 @@ class DatabaseClient:
         Raises:
             Exception: 如果无法读取表schema，抛出异常
         """
-        if self._table_fields is not None:
-            return self._table_fields  # 返回缓存的结果
+        if table_name in self._table_fields:
+            return self._table_fields[table_name]  # 返回缓存的结果
 
         conn = self._get_connection()
         try:
@@ -48,8 +48,8 @@ class DatabaseClient:
                 if not columns:
                     raise Exception(f"表 {table_name} 不存在或无字段")
                 # 提取字段名（第一列是字段名）
-                self._table_fields = [column[0] for column in columns]
-                return self._table_fields
+                self._table_fields[table_name] = [column[0] for column in columns]
+                return self._table_fields[table_name]
         except Exception as e:
             # 如果读取失败，抛出异常让调用者处理
             print(f"读取表schema失败: {e}")

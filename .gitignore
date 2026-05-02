@@ -1,4 +1,39 @@
-/.claude
-/HT_工序纪录明细查询(2024年6月).xlsx
-/HT_工序纪录明细查询(2024年7月).xlsx
-/__pycache__
+.claude/
+
+# Python cache and artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+
+# Virtual env
+.venv/
+venv/
+env/
+
+# IDE/editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and temp
+*.log
+*.tmp
+*.temp
+
+# Local database / dumps
+*.db
+*.sqlite
+*.sqlitedb
+
+# Excel data files (do not push raw source data)
+*.xlsx
+*.xls
+~$*.xlsx
+~$*.xls

@@ -4,10 +4,10 @@
 
 
 class ProcessRecord:
-    """单条批号+物料下的 8 维工艺参数向量（实验一）。"""
+    """单条批号+物料品号+创建日期下的工艺记录。"""
 
     PARAM_ORDER = (
-        "core_od", #缆芯外径
+        "core_od",
         "jacket_od",
         "inner_die",
         "outer_die",
@@ -16,10 +16,22 @@ class ProcessRecord:
         "prod_speed",
         "actual_prod_speed",
     )
+    REQUIRED_FIELDS = PARAM_ORDER + ("created_date", "equipment_name")
 
-    def __init__(self, batch_no: str, product_no: str, source_file: str = ""):
+    def __init__(
+        self,
+        batch_no: str,
+        product_no: str,
+        created_date=None,
+        equipment_name: str = "",
+        remark_info: str = "",
+        source_file: str = "",
+    ):
         self.batch_no = batch_no
         self.product_no = product_no
+        self.created_date = created_date
+        self.equipment_name = equipment_name
+        self.remark_info = remark_info
         self.source_file = source_file
 
         self.core_od = None
@@ -32,6 +44,8 @@ class ProcessRecord:
         self.actual_prod_speed = None
 
         self.is_valid = True
+        self.invalid_reason_code = ""
+        self.invalid_reason_text = ""
         self.error_msg = ""
         self.warning_msg = ""
 
@@ -47,20 +61,17 @@ class ProcessRecord:
         实验二可在本方法内扩展更多规则。
         """
         errors = []
-        warnings = []
-
-        missing = [k for k in self.PARAM_ORDER if getattr(self, k) is None]
+        missing = [k for k in self.REQUIRED_FIELDS if self._is_missing_field(k)]
         if missing:
-            warnings.append(f"缺失参数: {','.join(missing)}")
-            # return False
+            errors.append(f"缺失必填字段: {','.join(missing)}")
 
         if self.jacket_od is not None and self.core_od is not None:
-            if self.jacket_od <= self.core_od:
-                errors.append("护套外径<=缆芯外径")
+            if self.core_od >= self.jacket_od:
+                errors.append("缆芯外径>=护套外径")
 
         if self.outer_die is not None and self.inner_die is not None:
-            if self.outer_die <= self.inner_die:
-                errors.append("挤出外模<=挤出内模")
+            if self.inner_die >= self.outer_die:
+                errors.append("挤出内模>=挤出外模")
 
         for k in self.PARAM_ORDER:
             v = getattr(self, k)
@@ -69,10 +80,33 @@ class ProcessRecord:
 
         self.is_valid = len(errors) == 0
         self.error_msg = " | ".join(errors)
-        self.warning_msg = " | ".join(warnings)
+        self.warning_msg = ""
+        self.invalid_reason_code = "VALIDATION_ERROR" if errors else ""
+        self.invalid_reason_text = self.error_msg
         return self.is_valid
 
+    def _is_missing_field(self, field_name: str) -> bool:
+        value = getattr(self, field_name)
+        if value is None:
+            return True
+        if isinstance(value, str) and value.strip() == "":
+            return True
+        return False
+
+    def process_vector_tuple(self) -> tuple:
+        """统计用工艺向量：7数值参数 + 设备名称。"""
+        return (
+            self.core_od,
+            self.jacket_od,
+            self.inner_die,
+            self.outer_die,
+            self.screw_speed,
+            self.screw_current,
+            self.actual_prod_speed,
+            self.equipment_name,
+        )
+
     def to_tuple(self) -> tuple:
-        """8 维参数向量元组，顺序固定，供后续纯度/聚类/哈希等统计使用。"""
+        """保持向后兼容：返回 8 维原始参数向量。"""
         return tuple(getattr(self, k) for k in self.PARAM_ORDER)
     

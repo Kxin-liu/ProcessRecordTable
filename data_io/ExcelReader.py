@@ -15,6 +15,29 @@ class ExcelReader:
     def __init__(self, cleaner: DataCleaner):  # 初始化Excel读取器
         self.cleaner = cleaner  # 保存数据清洗器引用
 
+    @staticmethod
+    def _normalize_text(raw_val) -> str:
+        if raw_val is None:
+            return ""
+        text = str(raw_val).strip()
+        if text.lower() in ("nan", "none", "null"):
+            return ""
+        return text
+
+    @staticmethod
+    def _normalize_datetime(raw_val):
+        if raw_val is None:
+            return None
+        try:
+            if pd.isna(raw_val):
+                return None
+        except (TypeError, ValueError):
+            pass
+        parsed = pd.to_datetime(raw_val, errors="coerce")
+        if pd.isna(parsed):
+            return None
+        return parsed.to_pydatetime().replace(microsecond=0)
+
     def _pick_columns(self, df: pd.DataFrame) -> dict:  # 智能定位Excel列位置
         columns = list(df.columns)  # 获取Excel所有列名
         index_map = {}  # 初始化列索引映射字典
@@ -37,20 +60,36 @@ class ExcelReader:
     def read_dataframe(self, df: pd.DataFrame, source_file: str = "") -> list[ProcessRecord]:
         """与 read 相同逻辑，便于测试用构造好的 DataFrame 做「不遗漏、不错误」断言。"""
         idx = self._pick_columns(df)  # 获取列索引映射
-        grouped: dict[tuple[str, str], ProcessRecord] = {}  # 初始化分组字典
+        grouped: dict[tuple[str, str, object], ProcessRecord] = {}  # 初始化分组字典
 
         for _, row in df.iterrows():  # 遍历DataFrame每一行
-            batch_no = str(row.iloc[idx["batch_no"]]).strip()  # 提取并清理批号
-            product_no = str(row.iloc[idx["product_no"]]).strip()  # 提取并清理物料品号
-            item_name = str(row.iloc[idx["item_name"]]).strip()  # 提取并清理项目名称
+            batch_no = self._normalize_text(row.iloc[idx["batch_no"]])  # 提取并清理批号
+            product_no = self._normalize_text(row.iloc[idx["product_no"]])  # 提取并清理物料品号
+            equipment_name = self._normalize_text(row.iloc[idx["equipment_name"]])
+            remark_info = self._normalize_text(row.iloc[idx["remark_info"]])
+            created_date = self._normalize_datetime(row.iloc[idx["created_date"]])
+            item_name = self._normalize_text(row.iloc[idx["item_name"]])  # 提取并清理项目名称
             raw_result = row.iloc[idx["item_result"]]  # 提取项目记录结果
 
-            if not batch_no or batch_no.lower() == "nan":  # 检查批号是否有效
+            if not batch_no:  # 检查批号是否有效
                 continue  # 跳过无效批号行
 
-            key = (batch_no, product_no)  # 创建分组键（批号+物料）
+            key = (batch_no, product_no, created_date)  # 创建分组键（批号+物料+创建日期）
             if key not in grouped:  # 检查是否新组
-                grouped[key] = ProcessRecord(batch_no, product_no, source_file)  # 创建新记录对象
+                grouped[key] = ProcessRecord(
+                    batch_no=batch_no,
+                    product_no=product_no,
+                    created_date=created_date,
+                    equipment_name=equipment_name,
+                    remark_info=remark_info,
+                    source_file=source_file,
+                )
+            else:
+                record = grouped[key]
+                if not record.equipment_name and equipment_name:
+                    record.equipment_name = equipment_name
+                if not record.remark_info and remark_info:
+                    record.remark_info = remark_info
 
             param_key = self.cleaner.match_param_name(item_name)  # 映射项目名称到参数名
             if not param_key:  # 检查映射是否成功

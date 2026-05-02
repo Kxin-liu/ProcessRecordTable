@@ -16,14 +16,17 @@ def _df_from_rows(rows: list[tuple]) -> pd.DataFrame:
     构造与 COLUMN_FALLBACK_INDEX 对齐的 20 列表（列名不含中文，走列序兜底）。
     rows: (批号, 物料品号, 项目名称, 项目记录结果)
     """
-    cols = [f"c{i}" for i in range(20)]
+    cols = [f"c{i}" for i in range(23)]
     data = []
-    for batch, product, item_name, raw_result in rows:
-        row = [0] * 20
+    for batch, product, created_date, equipment_name, remark_info, item_name, raw_result in rows:
+        row = [0] * 23
         row[0] = batch
         row[8] = product
+        row[13] = equipment_name
+        row[16] = remark_info
+        row[19] = created_date
         row[18] = item_name
-        row[19] = raw_result
+        row[22] = raw_result
         data.append(row)
     return pd.DataFrame(data, columns=cols)
 
@@ -52,14 +55,14 @@ class TestCompletenessAndAccuracy(unittest.TestCase):
             "actual_prod_speed": 98.5,
         }
         rows = [
-            ("B_FULL_001", "P9001", "缆芯外径(mm)", "2.20"),
-            ("B_FULL_001", "P9001", "护套外径(mm)", "8.5"),
-            ("B_FULL_001", "P9001", "挤出内模", "1.1"),
-            ("B_FULL_001", "P9001", "挤出外模", "2.2"),
-            ("B_FULL_001", "P9001", "螺杆速度(rpm)-(挤塑主机速度)（转/分）", "45"),
-            ("B_FULL_001", "P9001", "螺杆电流", "55.5"),
-            ("B_FULL_001", "P9001", "生产速度 (米/分)", "100.0"),
-            ("B_FULL_001", "P9001", "实际生产速度 (m/min)", "98.5"),
+            ("B_FULL_001", "P9001", "2024-06-01 08:00:00", "设备A", "主机手杜伟", "缆芯外径(mm)", "2.20"),
+            ("B_FULL_001", "P9001", "2024-06-01 08:00:00", "设备A", "主机手杜伟", "护套外径(mm)", "8.5"),
+            ("B_FULL_001", "P9001", "2024-06-01 08:00:00", "设备A", "主机手杜伟", "挤出内模", "1.1"),
+            ("B_FULL_001", "P9001", "2024-06-01 08:00:00", "设备A", "主机手杜伟", "挤出外模", "2.2"),
+            ("B_FULL_001", "P9001", "2024-06-01 08:00:00", "设备A", "主机手杜伟", "螺杆速度(rpm)-(挤塑主机速度)（转/分）", "45"),
+            ("B_FULL_001", "P9001", "2024-06-01 08:00:00", "设备A", "主机手杜伟", "螺杆电流", "55.5"),
+            ("B_FULL_001", "P9001", "2024-06-01 08:00:00", "设备A", "主机手杜伟", "生产速度 (米/分)", "100.0"),
+            ("B_FULL_001", "P9001", "2024-06-01 08:00:00", "设备A", "主机手杜伟", "实际生产速度 (m/min)", "98.5"),
         ]
         df = _df_from_rows(rows)
         out = self.reader.read_dataframe(df, "synthetic.xlsx")
@@ -82,8 +85,8 @@ class TestCompletenessAndAccuracy(unittest.TestCase):
     def test_speed_exclusive_no_wrong_bucket(self):
         """生产速度 / 实际生产速度 不得串入对方字段（不错误）。"""
         rows = [
-            ("B_SPD", "P1", "生产速度", "20"),
-            ("B_SPD", "P1", "实际生产速度", "25"),
+            ("B_SPD", "P1", "2024-06-01", "设备A", "", "生产速度", "20"),
+            ("B_SPD", "P1", "2024-06-01", "设备A", "", "实际生产速度", "25"),
         ]
         df = _df_from_rows(rows)
         rec = self.reader.read_dataframe(df, "x")[0]
@@ -93,8 +96,8 @@ class TestCompletenessAndAccuracy(unittest.TestCase):
     def test_auxiliary_screw_speed_not_collected(self):
         """辅助挤塑速度行不得写入螺杆速度（不错误）。"""
         rows = [
-            ("B_AUX", "P1", "螺杆速度(rpm)-(辅助挤塑速度)（转/分）", "99"),
-            ("B_AUX", "P1", "螺杆速度(rpm)-(挤塑主机速度)（转/分）", "40"),
+            ("B_AUX", "P1", "2024-06-01", "设备A", "", "螺杆速度(rpm)-(辅助挤塑速度)（转/分）", "99"),
+            ("B_AUX", "P1", "2024-06-01", "设备A", "", "螺杆速度(rpm)-(挤塑主机速度)（转/分）", "40"),
         ]
         df = _df_from_rows(rows)
         rec = self.reader.read_dataframe(df, "x")[0]
@@ -104,7 +107,7 @@ class TestCompletenessAndAccuracy(unittest.TestCase):
     def test_unit_suffix_parsed_to_same_numeric(self):
         """带单位的原始格与纯数字一致（不错误）。"""
         rows = [
-            ("B_UNIT", "P1", "生产速度", "45.0(m/min)"),
+            ("B_UNIT", "P1", "2024-06-01", "设备A", "", "生产速度", "45.0(m/min)"),
         ]
         df = _df_from_rows(rows)
         rec = self.reader.read_dataframe(df, "x")[0]
@@ -113,8 +116,8 @@ class TestCompletenessAndAccuracy(unittest.TestCase):
     def test_repeated_param_last_row_wins(self):
         """同批号同参数多行时以后值为准（与实现一致，便于审计重复行）。"""
         rows = [
-            ("B_REP", "P1", "缆芯外径(mm)", "1.0"),
-            ("B_REP", "P1", "缆芯外径(mm)", "2.2"),
+            ("B_REP", "P1", "2024-06-01", "设备A", "", "缆芯外径(mm)", "1.0"),
+            ("B_REP", "P1", "2024-06-01", "设备A", "", "缆芯外径(mm)", "2.2"),
         ]
         df = _df_from_rows(rows)
         rec = self.reader.read_dataframe(df, "x")[0]
@@ -123,8 +126,8 @@ class TestCompletenessAndAccuracy(unittest.TestCase):
     def test_slash_missing_not_fake_zero(self):
         """缺失符 '/' 不得变成错误数值（应为 None，属于「缺失」而非「错数」）。"""
         rows = [
-            ("B_MISS", "P1", "缆芯外径(mm)", "/"),
-            ("B_MISS", "P1", "护套外径(mm)", "8.0"),
+            ("B_MISS", "P1", "2024-06-01", "设备A", "", "缆芯外径(mm)", "/"),
+            ("B_MISS", "P1", "2024-06-01", "设备A", "", "护套外径(mm)", "8.0"),
         ]
         df = _df_from_rows(rows)
         rec = self.reader.read_dataframe(df, "x")[0]
@@ -142,6 +145,12 @@ class TestEightParamCompletenessContract(unittest.TestCase):
     def test_tuple_length_eight(self):
         r = ProcessRecord("a", "b")
         self.assertEqual(len(r.to_tuple()), 8)
+
+    def test_validate_require_ten_fields(self):
+        r = ProcessRecord("a", "b", created_date="2024-01-01", equipment_name="")
+        r.validate()
+        self.assertFalse(r.is_valid)
+        self.assertIn("缺失必填字段", r.error_msg)
 
 
 if __name__ == "__main__":

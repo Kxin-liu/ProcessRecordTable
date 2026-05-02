@@ -2,7 +2,7 @@
 # 适用于超大Excel文件的处理
 
 import gc
-from typing import List, Generator
+from typing import List
 from data_io.DatabaseClient import DatabaseClient
 from business_logic.ProcessRecord import ProcessRecord
 
@@ -35,39 +35,51 @@ class StreamProcessor:
         """
         total_count = 0
         valid_count = 0
-        current_batch = []
+        current_valid_batch = []
+        current_invalid_batch = []
 
         for record in records:
             # 验证记录
             record.validate()
             if record.is_valid:
                 valid_count += 1
-
-            current_batch.append(record)
+                current_valid_batch.append(record)
+            else:
+                current_invalid_batch.append(record)
             total_count += 1
 
             # 达到批次大小时入库
-            if len(current_batch) >= self.batch_size:
-                self._batch_insert(current_batch)
-                current_batch.clear()
+            if len(current_valid_batch) >= self.batch_size:
+                self._batch_insert_valid(current_valid_batch)
+                current_valid_batch.clear()
+            if len(current_invalid_batch) >= self.batch_size:
+                self._batch_insert_invalid(current_invalid_batch)
+                current_invalid_batch.clear()
 
-                # 定期垃圾回收，防止内存溢出
-                if total_count % (self.batch_size * 5) == 0:
-                    self._force_gc()
+            # 定期垃圾回收，防止内存溢出
+            if total_count % (self.batch_size * 5) == 0:
+                self._force_gc()
 
         # 处理剩余的记录
-        if current_batch:
-            self._batch_insert(current_batch)
+        if current_valid_batch:
+            self._batch_insert_valid(current_valid_batch)
+        if current_invalid_batch:
+            self._batch_insert_invalid(current_invalid_batch)
 
         print(f"文件处理完成: 总记录={total_count}, 有效={valid_count}")
         return total_count, valid_count
 
-    def _batch_insert(self, records: List[ProcessRecord]) -> None:
-        """批量插入数据库"""
+    def _batch_insert_valid(self, records: List[ProcessRecord]) -> None:
+        """批量插入有效记录到主表"""
         if not records:
             return
+        self.db_client.replace_many_streaming(records, table_name="ht_param_vector")
 
-        self.db_client.replace_many_streaming(records)
+    def _batch_insert_invalid(self, records: List[ProcessRecord]) -> None:
+        """批量插入无效记录到无效表"""
+        if not records:
+            return
+        self.db_client.replace_many_streaming(records, table_name="ht_invalid_param_vector")
 
     def _force_gc(self) -> None:
         """强制垃圾回收"""
@@ -79,4 +91,3 @@ class StreamProcessor:
     def close(self):
         """关闭连接"""
         self.db_client.close()
-
