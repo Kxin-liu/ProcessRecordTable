@@ -73,3 +73,24 @@ CREATE TABLE IF NOT EXISTS quality_inspection_raw (
     imported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uk_quality_file_row (source_file, row_no)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS quality_inspection_param (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    batch_no VARCHAR(128) NOT NULL,
+    product_no VARCHAR(128) NOT NULL,
+    item_name VARCHAR(255) NOT NULL,
+    param_type VARCHAR(32) NOT NULL,
+    lower_bound DOUBLE NULL,
+    upper_bound DOUBLE NULL,
+    qualitative_value TEXT NULL,
+    actual_value DOUBLE NULL,
+    is_ok TINYINT(1) NOT NULL,
+    table_is_ok TINYINT(1) NULL,
+    source_file VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    KEY idx_quality_batch (batch_no),
+    KEY idx_quality_product (product_no),
+    KEY idx_quality_type (param_type),
+    KEY idx_quality_is_ok (is_ok)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
