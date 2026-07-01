@@ -49,12 +49,6 @@ class TestStatisticsService(unittest.TestCase):
         out = self.service.material_vector_production_detail(self.records)
         self.assertTrue(any(row["product_no"] == "P1" and row["production_count"] == 2 for row in out))
 
-    def test_operator_extract_and_purity(self):
-        self.assertEqual(self.service.extract_operator("返工   主机手杜伟   跟班黄刚超"), "杜伟")
-        out = self.service.operator_vector_purity(self.records)
-        self.assertIn("杜伟", out)
-        self.assertIn("UNKNOWN_OPERATOR", out)
-
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

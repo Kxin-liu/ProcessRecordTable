@@ -6,7 +6,8 @@
 
 - **业务规则落地**：将工艺记录按规则校验，自动分流到“有效记录表 / 无效记录表”。
 - **面向变化设计**：新增字段（创建日期、设备名称、备注）与新增导入源（品质检验）时，核心架构无需推翻。
-- **统计能力可复用**：抽象了“key + 工艺向量 + 纯度”的统一统计逻辑，支持物料维度与操机手维度复用。
+- **统计能力可复用**：抽象了“key + 工艺向量 + 纯度”的统一统计逻辑，支持物料维度统计。
+- **相关与预测分析**：支持品质检验定量字段与 8 个工艺参数的 Pearson 相关分析，并用 Random Forest 建立回归预测器。
 - **工程可用性**：包含单元测试、批量入库、动态表结构读取、基础 `.gitignore` 规范。
 
 ## 功能概览
@@ -29,9 +30,19 @@
   - 不同工艺向量数量
   - 向量纯度（出现次数 / 该 key 下不同向量数）
   - 生产次数（不同批号）
-- 操机手维度：
-  - 从备注中提取“主机手xxx”
-  - 复用同一纯度计算核心
+
+### 4) 相关分析与回归预测（`CorrelationRegressionMain.py`）
+- 扫描所有可用的 `HT_*.xlsx` 与 `品质检验*.xlsx`
+- 将工序记录与品质检验定量参数按 `批号 + 物料品号` 关联
+- 输出 8x10 Pearson 关联分析表：
+  - 行：缆芯外径、护套外径、挤出内模、挤出外模、螺杆速度、螺杆电流、生产速度、实际生产速度
+  - 列：样本数最多的 10 个品质检验定量字段
+  - 单元格：正相关/负相关 + Pearson r 值
+- 分别在“不区分物料品号”和“按物料品号分组”的基础上生成关联表
+- 选择最有代表性的 5 个定量字段，使用 RandomForestRegressor 建立回归预测器
+- 回归指标输出 `MAE`、`R2`、`precision`、`recall`；其中 precision/recall 按“预测值落入训练集尺度自适应容差内”定义命中率
+
+本次实验已去除“备注信息”处理需求，不再统计每个操机手的纯度信息。
 
 ## 技术栈
 
@@ -53,6 +64,7 @@ exp2/
 │  ├─ ProcessRecord.py
 │  ├─ StreamProcessor.py
 │  ├─ LargeExcelProcessor.py
+│  ├─ CorrelationRegressionService.py
 │  └─ StatisticsService.py
 ├─ data_io/
 │  ├─ ExcelReader.py
@@ -89,7 +101,13 @@ python DataImportMain.py
 python QualityImportMain.py
 ```
 
-### 4. 运行测试
+### 4. 运行相关分析与回归预测
+
+```bash
+python CorrelationRegressionMain.py
+```
+
+### 5. 运行测试
 
 ```bash
 python -m unittest discover -s tests -p "Test*.py" -v

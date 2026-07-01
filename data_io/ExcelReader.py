@@ -66,7 +66,6 @@ class ExcelReader:
             batch_no = self._normalize_text(row.iloc[idx["batch_no"]])  # 提取并清理批号
             product_no = self._normalize_text(row.iloc[idx["product_no"]])  # 提取并清理物料品号
             equipment_name = self._normalize_text(row.iloc[idx["equipment_name"]])
-            remark_info = self._normalize_text(row.iloc[idx["remark_info"]])
             created_date = self._normalize_datetime(row.iloc[idx["created_date"]])
             item_name = self._normalize_text(row.iloc[idx["item_name"]])  # 提取并清理项目名称
             raw_result = row.iloc[idx["item_result"]]  # 提取项目记录结果
@@ -81,15 +80,12 @@ class ExcelReader:
                     product_no=product_no,
                     created_date=created_date,
                     equipment_name=equipment_name,
-                    remark_info=remark_info,
                     source_file=source_file,
                 )
             else:
                 record = grouped[key]
                 if not record.equipment_name and equipment_name:
                     record.equipment_name = equipment_name
-                if not record.remark_info and remark_info:
-                    record.remark_info = remark_info
 
             param_key = self.cleaner.match_param_name(item_name)  # 映射项目名称到参数名
             if not param_key:  # 检查映射是否成功

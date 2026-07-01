@@ -1,4 +1,3 @@
-import re
 from collections import Counter, defaultdict
 from typing import Iterable
 
@@ -7,17 +6,7 @@ from business_logic.QualityInspectionRecord import QualityInspectionRecord
 
 
 class StatisticsService:
-    """工艺参数统计服务：物料维度与操机手维度纯度统计。"""
-
-    OPERATOR_PATTERN = re.compile(r"主机手\s*([^\s]+)")
-
-    @staticmethod
-    def extract_operator(remark_info: str) -> str:
-        text = (remark_info or "").strip()
-        match = StatisticsService.OPERATOR_PATTERN.search(text)
-        if match:
-            return match.group(1).strip()
-        return "UNKNOWN_OPERATOR"
+    """工艺参数统计服务：物料维度纯度与质量评分统计。"""
 
     @staticmethod
     def _count_key_vector(rows: Iterable[tuple[str, tuple]]) -> dict[str, Counter]:
@@ -67,13 +56,6 @@ class StatisticsService:
                     }
                 )
         return out
-
-    def operator_vector_purity(self, records: list[ProcessRecord]) -> dict[str, list[dict]]:
-        grouped = self._count_key_vector(
-            (self.extract_operator(record.remark_info), record.process_vector_tuple())
-            for record in records
-        )
-        return {key: self._purity_from_counter(counter) for key, counter in grouped.items()}
 
     def quality_isok_error_batches(
         self, quality_records: list[QualityInspectionRecord]
